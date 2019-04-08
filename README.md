@@ -1,3 +1,6 @@
+
+This project is also hosted at https://monodop.github.io/react-sudoku-solver/
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts

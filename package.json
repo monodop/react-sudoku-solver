@@ -7,6 +7,7 @@
     "@types/node": "11.13.0",
     "@types/react": "16.8.12",
     "@types/react-dom": "16.8.3",
+    "gh-pages": "^2.0.1",
     "immer": "^2.1.4",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
@@ -20,7 +21,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -33,5 +36,6 @@
   ],
   "devDependencies": {
     "@types/react-redux": "^7.0.6"
-  }
+  },
+  "homepage": "https://monodop.github.io/react-sudoku-solver/"
 }
