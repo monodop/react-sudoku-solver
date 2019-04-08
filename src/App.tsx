@@ -11,9 +11,9 @@ const store = createStore(rootReducer);
 export const App = (props: {}) => {
     return (
         <StoreContext.Provider value={store}>
-            <header>
+            <h1>
                 Sudoku Solver
-            </header>
+            </h1>
             <Board />
         </StoreContext.Provider>
     )

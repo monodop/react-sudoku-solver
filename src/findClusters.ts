@@ -2,6 +2,7 @@
 export interface Cluster {
     indices: number[];
     matches: number[];
+    subClusters: Cluster[];
 }
 
 function distinct<T>(items: T[]): T[] {
@@ -41,16 +42,16 @@ export function findBothClusterSets(data: number[][]): [Cluster[], Cluster[]] {
         }
     }
 
-    let normalClusters = findClusters(data);
-    let inverseClusters = findClusters(inverseData);
-    let fixedInverseClusters = inverseClusters.map<Cluster>(cluster => {
-        return {
-            indices: cluster.matches,
-            matches: cluster.indices.map(index => indexToValue[index]),
-        }
+    const flipCluster = (cluster: Cluster): Cluster => ({
+        indices: cluster.matches,
+        matches: cluster.indices.map(index => indexToValue[index]),
+        subClusters: cluster.subClusters.map(flipCluster),
     });
 
-    return [normalClusters, fixedInverseClusters];
+    let normalClusters = findClusters(data);
+    let inverseClusters = findClusters(inverseData).map(flipCluster);
+
+    return [normalClusters, inverseClusters];
 }
 
 export function findClusters(data: number[][]): Cluster[] {
@@ -81,29 +82,29 @@ export function findClusters(data: number[][]): Cluster[] {
         }
 
         if (d.length === matchingSetIndices.length) {
-            let leftCluster = {
+            let leftCluster: Cluster = {
                 indices: matchingSetIndices,
                 matches: d,
+                subClusters: [],
             };
-            let rightCluster = {
+            let rightCluster: Cluster = {
                 indices: removeRange(allIndices, matchingSetIndices),
                 matches: removeRange(allValues, d),
+                subClusters: [],
             };
 
+            if (leftCluster.indices.length > 1)
+                leftCluster.subClusters = findClusters(applyClusters(data, [leftCluster]));
+            if (rightCluster.indices.length > 1)
+                rightCluster.subClusters = findClusters(applyClusters(data, [rightCluster]));
+
             return [
-                ...(leftCluster.indices.length > 1 ? findClusters(applyClusters(data, [leftCluster])) : [leftCluster]),
-                ...(rightCluster.indices.length > 1 ? findClusters(applyClusters(data, [rightCluster])) : [rightCluster]),
+                leftCluster,
+                rightCluster,
             ];
 
         }
 
     }
-
-    if (allIndices.length === 0)
-        return [];
-
-    return [{
-        matches: allValues,
-        indices: allIndices,
-    }];
+    return [];
 }

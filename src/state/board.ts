@@ -1,6 +1,6 @@
 import {Action} from "redux";
 import produce from "immer";
-import {applyClusters, findBothClusterSets, findClusters, removeRange} from "../findClusters";
+import {findBothClusterSets, removeRange} from "../findClusters";
 
 export const CELL_FIXED = 'CELL_FIXED';
 export interface FixedCell {
@@ -21,6 +21,7 @@ export type CellState = (FixedCell | FloatingCell) & {
 
 export interface Constraint {
     cells: [number, number][];
+    name: string;
 }
 
 export interface BoardState {
@@ -86,16 +87,29 @@ export const generateEmptyBoard = (initialValues: number[] = [], constraints: Co
     constraints,
 });
 
+const columnNames : {[key: number]: string} = {
+    0: 'left',
+    1: 'middle',
+    2: 'right',
+};
+const rowNames : {[key: number]: string} = {
+    0: 'top',
+    1: 'middle',
+    2: 'bottom',
+};
+
 export const generateDefaultConstraints = (): Constraint[] => {
     let constraints: Constraint[] = [];
     for (let x = 0; x < 9; x++) {
         constraints.push({
-            cells: Array(9).fill(0).map((_, y) => [x, y])
+            cells: Array(9).fill(0).map((_, y) => [x, y]),
+            name: `column ${x+1}`,
         });
     }
     for (let y = 0; y < 9; y++) {
         constraints.push({
-            cells: Array(9).fill(0).map((_, x) => [x, y])
+            cells: Array(9).fill(0).map((_, x) => [x, y]),
+            name: `row ${y+1}`,
         });
     }
     for (let ax = 0; ax < 3; ax++) {
@@ -108,6 +122,7 @@ export const generateDefaultConstraints = (): Constraint[] => {
             }
             constraints.push({
                 cells: cellCoords,
+                name: 'the ' + ((ax === 1 && ay === 1) ? 'central' : `${rowNames[ay]}-${columnNames[ax]}`) + ' square',
             });
         }
     }
@@ -175,6 +190,7 @@ export const boardReducer = (boardState: BoardState = initialBoardState, action:
 export interface NextActionSet {
     actions: (SetCellAction | RemovePossibleValuesAction)[];
     causes: [number, number, number[]][];
+    messages: string[];
 }
 
 export function getNextAction(boardState: BoardState): NextActionSet {
@@ -182,6 +198,7 @@ export function getNextAction(boardState: BoardState): NextActionSet {
     let nextActionSet: NextActionSet = {
         actions: [],
         causes: [],
+        messages: [],
     };
 
     for (let x = 0; x < 9; x++) {
@@ -197,21 +214,17 @@ export function getNextAction(boardState: BoardState): NextActionSet {
             }
         }
     }
-    if (nextActionSet.actions.length > 0)
+    if (nextActionSet.actions.length > 0) {
+        nextActionSet.messages.push('The cell(s) can only be one possible value.');
         return nextActionSet;
+    }
 
     for (let constraint of boardState.constraints) {
-
-        let indexToCoords: [number, number][] = [];
-        let data: number[][] = [];
 
         for (let [x, y] of constraint.cells) {
             let cell = boardState.cells[y][x];
             if (cell.type === CELL_FIXED)
                 continue;
-
-            indexToCoords.push([x, y]);
-            data.push(cell.possibleValues);
 
             for (let [x2, y2] of constraint.cells) {
                 let cell2 = boardState.cells[y2][x2];
@@ -225,21 +238,46 @@ export function getNextAction(boardState: BoardState): NextActionSet {
                     if (!nextActionSet.causes.some(([cx, cy]) => cx === x2 && cy === y2)) {
                         nextActionSet.causes.push([x2, y2, []]);
                     }
-                    let [_, __, cvalues] = nextActionSet.causes.find(([cx, cy]) => cx === x2 && cy === y2)!;
-                    cvalues.push(cell2.value);
+                    let cause = nextActionSet.causes.find(([cx, cy]) => cx === x2 && cy === y2);
+                    if (cause)
+                        cause[2].push(cell2.value);
                 }
             }
         }
+    }
 
-        if (nextActionSet.actions.length > 0)
-            return nextActionSet;
+    if (nextActionSet.actions.length > 0) {
+        nextActionSet.messages.push('The values already exist in the highlighted cells.');
+        return nextActionSet;
+    }
+
+    let messages: string[] = [];
+    for (let constraint of boardState.constraints) {
+
+        let indexToCoords: [number, number][] = [];
+        let data: number[][] = [];
+
+        for (let [x, y] of constraint.cells) {
+            let cell = boardState.cells[y][x];
+            if (cell.type === CELL_FIXED)
+                continue;
+
+            indexToCoords.push([x, y]);
+            data.push(cell.possibleValues);
+        }
 
         let clusterList = findBothClusterSets(data);
         for (let clusters of clusterList) {
+
+            let clusterMessages = [];
+            let useClusterMessages = false;
             for (let cluster of clusters) {
+                clusterMessages.push(`values ${[ ...cluster.matches].sort().join(', ')} are in cells `+
+                    `${cluster.indices.map(i => `(${indexToCoords[i][0]},${indexToCoords[i][1]})`).join(', ')}`);
                 for (let i of cluster.indices) {
                     let extraValues = removeRange(data[i], cluster.matches);
                     if (extraValues.length > 0) {
+                        useClusterMessages = true;
                         nextActionSet.actions.push({
                             type: REMOVE_POSSIBLE_VALUES,
                             x: indexToCoords[i][0],
@@ -249,12 +287,25 @@ export function getNextAction(boardState: BoardState): NextActionSet {
                     }
                 }
             }
+
+            if (useClusterMessages) {
+                clusterMessages[clusterMessages.length - 1] = 'and ' + clusterMessages[clusterMessages.length - 1];
+                messages.push(`We can build ${clusterMessages.length} clusters, such that ${clusterMessages.join(', ')}`);
+                break;
+            }
         }
 
-        if (nextActionSet.actions.length > 0)
+        if (nextActionSet.actions.length > 0) {
+            nextActionSet.messages = [
+                `Consider ${constraint.name}.`,
+                ...messages,
+                'After building these clusters, we can remove some possible values from the cells.',
+            ];
             return nextActionSet;
+        }
     }
 
+    nextActionSet.messages.push('The board is complete.');
     return nextActionSet;
 
 }

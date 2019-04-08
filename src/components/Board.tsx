@@ -21,12 +21,19 @@ export const Board = (props: {}) => {
 
     return (
         <div>
-            <div className="cell-container">
-                {state.cells.map((row, y) => row.map((cell, x) => (
-                    <Cell key={`${x},${y}`} cell={cell} nextActionSet={nextActionSet} />
-                )))}
+            <div className="board-container">
+                <div className="cell-container">
+                    {state.cells.map((row, y) => row.map((cell, x) => (
+                        <Cell key={`${x},${y}`} cell={cell} nextActionSet={nextActionSet} />
+                    )))}
+                </div>
+                <div className="explanation">
+                    <h2>Explanation</h2>
+                    {nextActionSet.messages.map((message, i) =>
+                        <p key={i}>{message}</p>
+                    )}
+                </div>
             </div>
-            <div />
             <button onClick={onClick}>Next</button>
         </div>
     );

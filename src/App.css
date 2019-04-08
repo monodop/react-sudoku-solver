@@ -3,6 +3,12 @@ body {
   margin: 10px;
 }
 
+.board-container {
+  display: flex;
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
 .cell-container {
   display: inline-grid;
   grid-template-rows: repeat(9, 50px);
@@ -64,4 +70,9 @@ body {
 .cell-fixed:hover {
   background-color: #ccc;
   cursor: pointer;
+}
+
+.explanation {
+  flex: 1;
+  margin-left: 15px;
 }
