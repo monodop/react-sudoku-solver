@@ -6,7 +6,7 @@ import {
 } from "../state/board";
 import * as React from "react";
 
-export interface CellProps {
+export interface SolveCellProps {
     cell: CellState;
     nextActionSet: NextActionSet;
     isInitialValue: boolean;
@@ -34,7 +34,7 @@ const willHighlight = (x: number, y: number, n: number, nextActionSet: NextActio
     return false;
 };
 
-export const Cell = (props: CellProps) => {
+export const SolveCell = (props: SolveCellProps) => {
 
     const { cell, nextActionSet, isInitialValue } = props;
     const { x, y } = cell;
@@ -80,5 +80,5 @@ export const Cell = (props: CellProps) => {
         )
     }
 
-    return <div>???</div>
+    throw new Error('unknown cell type');
 };

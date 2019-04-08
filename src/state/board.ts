@@ -24,10 +24,16 @@ export interface Constraint {
     name: string;
 }
 
+export enum BoardStatus {
+    EnterValues,
+    Solve,
+}
+
 export interface BoardState {
     initialValues: number[][];
     cells: CellState[][];
     constraints: Constraint[];
+    status: BoardStatus;
 }
 
 export const SET_CELL = 'SET_CELL';
@@ -38,6 +44,13 @@ export interface SetCellAction extends Action {
     value: number;
 }
 
+export const CLEAR_CELL = 'CLEAR_CELL';
+export interface ClearCellAction extends Action {
+    type: typeof CLEAR_CELL;
+    x: number;
+    y: number;
+}
+
 export const REMOVE_POSSIBLE_VALUES = 'REMOVE_POSSIBLE_VALUES';
 export interface RemovePossibleValuesAction extends Action {
     type: typeof REMOVE_POSSIBLE_VALUES;
@@ -46,13 +59,40 @@ export interface RemovePossibleValuesAction extends Action {
     values: number[];
 }
 
-export type BoardActions = SetCellAction | RemovePossibleValuesAction;
+export const BEGIN_SOLVING = 'BEGIN_SOLVING';
+export interface BeginSolvingAction extends Action {
+    type: typeof BEGIN_SOLVING;
+}
+
+export const RETURN_TO_EDIT = 'RETURN_TO_EDIT';
+export interface ReturnToEditAction extends Action {
+    type: typeof RETURN_TO_EDIT;
+}
+
+export const RESET_BOARD_STATE = 'RESET_BOARD_STATE';
+export interface ResetBoardStateAction extends Action {
+    type: typeof RESET_BOARD_STATE;
+}
+
+export type BoardActions = SetCellAction
+    | RemovePossibleValuesAction
+    | ClearCellAction
+    | BeginSolvingAction
+    | ReturnToEditAction
+    | ResetBoardStateAction
+    ;
 
 export const setCell = (x: number, y: number, value: number): SetCellAction => ({
     type: SET_CELL,
     x,
     y,
     value,
+});
+
+export const clearCell = (x: number, y: number): ClearCellAction => ({
+    type: CLEAR_CELL,
+    x,
+    y,
 });
 
 export const removePossibleValues = (x: number, y: number, values: number[]): RemovePossibleValuesAction => ({
@@ -62,32 +102,59 @@ export const removePossibleValues = (x: number, y: number, values: number[]): Re
     values,
 });
 
-export const generateEmptyBoard = (initialValues: number[][] = [], constraints: Constraint[] = []): BoardState => ({
-    initialValues,
-    cells: Array(9).fill(0).map(
+export const beginSolving = (): BeginSolvingAction => ({
+    type: BEGIN_SOLVING,
+});
+
+export const returnToEdit = (): ReturnToEditAction => ({
+    type: RETURN_TO_EDIT,
+});
+
+export const resetBoardState = (): ResetBoardStateAction => ({
+    type: RESET_BOARD_STATE,
+});
+
+export const generateEmptyBoard = (initialValues: number[][] = [], constraints: Constraint[] = []): BoardState => {
+
+    let filledInitialValues: number[][] = Array(9).fill(0).map(
         (_, y) => Array(9).fill(0).map(
-            (_, x): CellState => {
-
-                if (initialValues.length > y && initialValues[y].length > x && initialValues[y][x] !== 0) {
-                    return {
-                        type: CELL_FIXED,
-                        x,
-                        y,
-                        value: initialValues[y][x],
-                    }
+            (_, x): number => {
+                if (initialValues.length > y && initialValues[y].length > x) {
+                    return initialValues[y][x];
                 }
-
-                return {
-                    type: CELL_FLOATING,
-                    x,
-                    y,
-                    possibleValues: new Array(9).fill(0).map((_, i) => i + 1)
-                };
+                return 0;
             }
         )
-    ),
-    constraints,
-});
+    );
+
+    return {
+        status: BoardStatus.EnterValues,
+        initialValues: filledInitialValues,
+        cells: Array(9).fill(0).map(
+            (_, y) => Array(9).fill(0).map(
+                (_, x): CellState => {
+
+                    if (filledInitialValues[y][x] !== 0) {
+                        return {
+                            type: CELL_FIXED,
+                            x,
+                            y,
+                            value: filledInitialValues[y][x],
+                        }
+                    }
+
+                    return {
+                        type: CELL_FLOATING,
+                        x,
+                        y,
+                        possibleValues: new Array(9).fill(0).map((_, i) => i + 1)
+                    };
+                }
+            )
+        ),
+        constraints,
+    };
+};
 
 const columnNames : {[key: number]: string} = {
     0: 'left',
@@ -178,6 +245,10 @@ export const boardReducer = (boardState: BoardState = initialBoardState, action:
                 y: action.y,
                 value: action.value,
             };
+
+            if (draft.status === BoardStatus.EnterValues) {
+                draft.initialValues[action.y][action.x] = action.value;
+            }
         }
 
         if (action.type === REMOVE_POSSIBLE_VALUES) {
@@ -185,6 +256,51 @@ export const boardReducer = (boardState: BoardState = initialBoardState, action:
             if (cell.type === CELL_FLOATING) {
                 cell.possibleValues = cell.possibleValues.filter(v => !action.values.includes(v));
             }
+        }
+
+        if (action.type === CLEAR_CELL) {
+            draft.cells[action.y][action.x] = {
+                type: CELL_FLOATING,
+                x: action.x,
+                y: action.y,
+                possibleValues: Array(9).fill(0).map((_, i) => i+1),
+            };
+
+            if (draft.status === BoardStatus.EnterValues) {
+                draft.initialValues[action.y][action.x] = 0;
+            }
+        }
+
+        if (action.type === BEGIN_SOLVING) {
+            draft.status = BoardStatus.Solve;
+        }
+
+        if (action.type === RETURN_TO_EDIT) {
+            draft.status = BoardStatus.EnterValues;
+            for (let x = 0; x < 9; x++) {
+                for (let y = 0; y < 9; y++) {
+                    if (draft.initialValues[y][x] !== 0) {
+                        draft.cells[y][x] = {
+                            type: CELL_FIXED,
+                            x,
+                            y,
+                            value: draft.initialValues[y][x],
+                        };
+                    }
+                    else {
+                        draft.cells[y][x] = {
+                            type: CELL_FLOATING,
+                            x,
+                            y,
+                            possibleValues: Array(9).fill(0).map((_, i) => i+1),
+                        };
+                    }
+                }
+            }
+        }
+
+        if (action.type === RESET_BOARD_STATE) {
+            return generateEmptyBoard([], generateDefaultConstraints());
         }
 
     });
