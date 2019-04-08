@@ -25,6 +25,7 @@ export interface Constraint {
 }
 
 export interface BoardState {
+    initialValues: number[][];
     cells: CellState[][];
     constraints: Constraint[];
 }
@@ -61,17 +62,18 @@ export const removePossibleValues = (x: number, y: number, values: number[]): Re
     values,
 });
 
-export const generateEmptyBoard = (initialValues: number[] = [], constraints: Constraint[] = []): BoardState => ({
+export const generateEmptyBoard = (initialValues: number[][] = [], constraints: Constraint[] = []): BoardState => ({
+    initialValues,
     cells: Array(9).fill(0).map(
         (_, y) => Array(9).fill(0).map(
             (_, x): CellState => {
 
-                if (initialValues.length > y * 9 + x && initialValues[y * 9 + x] !== 0) {
+                if (initialValues.length > y && initialValues[y].length > x && initialValues[y][x] !== 0) {
                     return {
                         type: CELL_FIXED,
                         x,
                         y,
-                        value: initialValues[y * 9 + x],
+                        value: initialValues[y][x],
                     }
                 }
 
@@ -132,37 +134,37 @@ export const generateDefaultConstraints = (): Constraint[] => {
 
 const initialBoardState: BoardState = generateEmptyBoard(
     // [
-    //     0, 0, 0, 2, 0, 0, 0, 1, 3,
-    //     0, 0, 2, 0, 5, 9, 6, 0, 0,
-    //     0, 9, 0, 0, 0, 0, 0, 0, 0,
-    //     6, 0, 0, 0, 0, 0, 0, 7, 0,
-    //     7, 0, 0, 0, 8, 0, 1, 0, 0,
-    //     0, 1, 0, 0, 4, 0, 0, 0, 0,
-    //     0, 0, 6, 0, 0, 8, 0, 4, 5,
-    //     8, 0, 0, 0, 0, 0, 0, 2, 0,
-    //     0, 0, 3, 0, 0, 2, 0, 0, 0,
+    //     [ 0, 0, 0, 2, 0, 0, 0, 1, 3 ],
+    //     [ 0, 0, 2, 0, 5, 9, 6, 0, 0 ],
+    //     [ 0, 9, 0, 0, 0, 0, 0, 0, 0 ],
+    //     [ 6, 0, 0, 0, 0, 0, 0, 7, 0 ],
+    //     [ 7, 0, 0, 0, 8, 0, 1, 0, 0 ],
+    //     [ 0, 1, 0, 0, 4, 0, 0, 0, 0 ],
+    //     [ 0, 0, 6, 0, 0, 8, 0, 4, 5 ],
+    //     [ 8, 0, 0, 0, 0, 0, 0, 2, 0 ],
+    //     [ 0, 0, 3, 0, 0, 2, 0, 0, 0 ],
     // ],
     // [
-    //     8, 0, 0, 0, 0, 0, 0, 0, 0,
-    //     0, 0, 3, 6, 0, 0, 0, 0, 0,
-    //     0, 7, 0, 0, 9, 0, 2, 0, 0,
-    //     0, 5, 0, 0, 0, 7, 0, 0, 0,
-    //     0, 0, 0, 0, 4, 5, 7, 0, 0,
-    //     0, 0, 0, 1, 0, 0, 0, 3, 0,
-    //     0, 0, 1, 0, 0, 0, 0, 6, 8,
-    //     0, 0, 8, 5, 0, 0, 0, 1, 0,
-    //     0, 9, 0, 0, 0, 0, 4, 0, 0,
+    //     [ 8, 0, 0, 0, 0, 0, 0, 0, 0 ],
+    //     [ 0, 0, 3, 6, 0, 0, 0, 0, 0 ],
+    //     [ 0, 7, 0, 0, 9, 0, 2, 0, 0 ],
+    //     [ 0, 5, 0, 0, 0, 7, 0, 0, 0 ],
+    //     [ 0, 0, 0, 0, 4, 5, 7, 0, 0 ],
+    //     [ 0, 0, 0, 1, 0, 0, 0, 3, 0 ],
+    //     [ 0, 0, 1, 0, 0, 0, 0, 6, 8 ],
+    //     [ 0, 0, 8, 5, 0, 0, 0, 1, 0 ],
+    //     [ 0, 9, 0, 0, 0, 0, 4, 0, 0 ],
     // ],
     [
-        4, 0, 5, 0, 2, 0, 0, 0, 0,
-        0, 0, 0, 7, 5, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 4, 0, 3,
-        0, 2, 0, 0, 0, 8, 0, 0, 6,
-        0, 0, 0, 0, 0, 0, 7, 0, 1,
-        0, 8, 0, 0, 9, 0, 0, 0, 0,
-        0, 0, 3, 2, 7, 0, 0, 0, 0,
-        0, 0, 1, 0, 0, 0, 6, 9, 0,
-        0, 0, 7, 6, 0, 0, 0, 1, 0,
+        [ 4, 0, 5, 0, 2, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 7, 5, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0, 0, 4, 0, 3 ],
+        [ 0, 2, 0, 0, 0, 8, 0, 0, 6 ],
+        [ 0, 0, 0, 0, 0, 0, 7, 0, 1 ],
+        [ 0, 8, 0, 0, 9, 0, 0, 0, 0 ],
+        [ 0, 0, 3, 2, 7, 0, 0, 0, 0 ],
+        [ 0, 0, 1, 0, 0, 0, 6, 9, 0 ],
+        [ 0, 0, 7, 6, 0, 0, 0, 1, 0 ],
     ],
     generateDefaultConstraints()
 );

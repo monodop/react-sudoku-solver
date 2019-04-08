@@ -9,6 +9,7 @@ import * as React from "react";
 export interface CellProps {
     cell: CellState;
     nextActionSet: NextActionSet;
+    isInitialValue: boolean;
 }
 
 const willSelect = (x: number, y: number, n: number, nextActionSet: NextActionSet) => {
@@ -35,7 +36,7 @@ const willHighlight = (x: number, y: number, n: number, nextActionSet: NextActio
 
 export const Cell = (props: CellProps) => {
 
-    const { cell, nextActionSet } = props;
+    const { cell, nextActionSet, isInitialValue } = props;
     const { x, y } = cell;
 
     if (cell.type === CELL_FLOATING) {
@@ -68,6 +69,9 @@ export const Cell = (props: CellProps) => {
         let className = "cell cell-fixed";
         if (willHighlight(cell.x, cell.y, cell.value, nextActionSet))
             className += " mark-will-highlight";
+
+        if (isInitialValue)
+            className += " mark-initial-value";
 
         return (
             <div className={className}>

@@ -67,6 +67,9 @@ body {
 .cell-fixed.mark-will-highlight {
   background-color: #ff3;
 }
+.cell-fixed.mark-initial-value {
+  font-weight: bold;
+}
 .cell-fixed:hover {
   background-color: #ccc;
   cursor: pointer;

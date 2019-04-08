@@ -24,7 +24,11 @@ export const Board = (props: {}) => {
             <div className="board-container">
                 <div className="cell-container">
                     {state.cells.map((row, y) => row.map((cell, x) => (
-                        <Cell key={`${x},${y}`} cell={cell} nextActionSet={nextActionSet} />
+                        <Cell key={`${x},${y}`}
+                              cell={cell}
+                              nextActionSet={nextActionSet}
+                              isInitialValue={state.initialValues[y][x] !== 0}
+                        />
                     )))}
                 </div>
                 <div className="explanation">
